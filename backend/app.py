@@ -5,15 +5,20 @@ from sqlalchemy import text
 from db import Base, engine
 from models import NGO, Tag, NGOTag, Opportunity, Event, WishlistItem, WishlistOffer
 from nlu import parse_query
-from routes_events import bp_events
+from routes_upcoming_events import bp_upcoming
 
-
-
-
+# ✅ NEW: import donations & volunteers routes
+from routes_donations import bp_donations
+from routes_volunteers import bp_volunteers
 
 app = Flask(__name__)
 CORS(app)
-app.register_blueprint(bp_events)
+
+# Register blueprints
+app.register_blueprint(bp_upcoming)
+app.register_blueprint(bp_donations)     # ✅ new
+app.register_blueprint(bp_volunteers)    # ✅ new
+
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "dev-admin-token")
 
 def require_admin():
@@ -47,7 +52,9 @@ def home():
         "docs": {
             "health": "/api/healthz",
             "search": "POST /api/search",
-            "events": "POST /api/events",
+            "events": "GET/POST/PATCH/DELETE /api/events",
+            "donations": "GET/POST/PATCH/DELETE /api/donations",
+            "volunteers": "GET/POST/PATCH/DELETE /api/volunteers",
             "create_ngo": "POST /api/ngos",
             "list_ngos": "GET /api/ngos",
             "wishlist_list": "GET /api/wishlist",
@@ -60,26 +67,6 @@ def home():
 @app.get("/api/healthz")
 def healthz():
     return {"ok": True}
-
-# ---------- Metrics / events ----------
-
-@app.post("/api/events")
-def create_event():
-    data = request.get_json(force=True)
-    event_type = data.get("event_type")
-    payload = data.get("payload", {})
-    if not event_type:
-        return jsonify({"error": "event_type required"}), 400
-
-    from db import SessionLocal
-    db = SessionLocal()
-    try:
-        ev = Event(event_type=event_type, payload=payload)
-        db.add(ev)
-        db.commit()
-        return jsonify({"ok": True})
-    finally:
-        db.close()
 
 # ---------- Search ----------
 
@@ -449,6 +436,18 @@ def update_offer(offer_id):
 
         db.commit()
         return jsonify({"ok": True})
+    finally:
+        db.close()
+
+@app.get("/api/ping-db")
+def ping_db():
+    from db import SessionLocal
+    db = SessionLocal()
+    try:
+        result = db.execute(text("SELECT NOW()")).fetchone()
+        return {"db_time": str(result[0])}
+    except Exception as e:
+        return {"error": str(e)}, 500
     finally:
         db.close()
 

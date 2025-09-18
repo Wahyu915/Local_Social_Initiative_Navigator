@@ -53,7 +53,7 @@ def create_event():
     """
     JSON body:
       - event_name, date (YYYY-MM-DD), time (HH:MM), location
-      - ngo_id (optional but recommended), organizer (optional), description (optional)
+      - ngo_id (optional), organizer (optional), description (optional)
     """
     data = request.get_json(force=True)
     required = ["event_name", "date", "time", "location"]
@@ -69,20 +69,19 @@ def create_event():
             if not ngo_obj:
                 return jsonify({"error": "invalid ngo_id"}), 400
 
-        # parse date/time
         from datetime import date as _date, time as _time
         d = _date.fromisoformat(data["date"])
         hh, mm = map(int, data["time"].split(":"))
         t = _time(hour=hh, minute=mm)
 
         ev = UpcomingEvent(
-            ngo_id = int(data["ngo_id"]) if data.get("ngo_id") else None,
-            event_name = data["event_name"].strip(),
-            event_date = d,
-            event_time = t,
-            location = data["location"].strip(),
-            organizer = (data.get("organizer") or "").strip() or (ngo_obj.name if ngo_obj else None),
-            description = (data.get("description") or "").strip() or None,
+            ngo_id=int(data["ngo_id"]) if data.get("ngo_id") else None,
+            event_name=data["event_name"].strip(),
+            event_date=d,
+            event_time=t,
+            location=data["location"].strip(),
+            organizer=(data.get("organizer") or "").strip() or (ngo_obj.name if ngo_obj else None),
+            description=(data.get("description") or "").strip() or None,
         )
         db.add(ev)
         db.commit()
@@ -90,3 +89,63 @@ def create_event():
         return jsonify(_serialize(ev)), 201
     finally:
         db.close()
+
+@bp_upcoming.patch("/<int:event_id>")
+def update_event(event_id):
+    """Update an existing event"""
+    # from app import require_admin
+    # auth = require_admin()
+    # if auth: return auth
+
+    data = request.get_json(force=True)
+    db = SessionLocal()
+    try:
+        ev = db.get(UpcomingEvent, event_id)
+        if not ev:
+            return jsonify({"error": "event not found"}), 404
+
+        if "event_name" in data and data["event_name"]:
+            ev.event_name = data["event_name"].strip()
+        if "date" in data and data["date"]:
+            from datetime import date as _date
+            ev.event_date = _date.fromisoformat(data["date"])
+        if "time" in data and data["time"]:
+            from datetime import time as _time
+            hh, mm = map(int, data["time"].split(":"))
+            ev.event_time = _time(hour=hh, minute=mm)
+        if "location" in data and data["location"]:
+            ev.location = data["location"].strip()
+        if "organizer" in data:
+            ev.organizer = (data["organizer"] or "").strip() or ev.organizer
+        if "description" in data:
+            ev.description = (data["description"] or "").strip() or None
+        if "ngo_id" in data and data["ngo_id"]:
+            ngo_obj = db.get(NGO, int(data["ngo_id"]))
+            if not ngo_obj:
+                return jsonify({"error": "invalid ngo_id"}), 400
+            ev.ngo_id = ngo_obj.id
+
+        db.commit()
+        db.refresh(ev)
+        return jsonify(_serialize(ev))
+    finally:
+        db.close()
+
+@bp_upcoming.delete("/<int:event_id>")
+def delete_event(event_id):
+    """Delete an event"""
+    # from app import require_admin
+    # auth = require_admin()
+    # if auth: return auth
+
+    db = SessionLocal()
+    try:
+        ev = db.get(UpcomingEvent, event_id)
+        if not ev:
+            return jsonify({"error": "event not found"}), 404
+        db.delete(ev)
+        db.commit()
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
