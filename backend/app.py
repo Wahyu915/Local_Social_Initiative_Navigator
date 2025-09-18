@@ -5,10 +5,15 @@ from sqlalchemy import text
 from db import Base, engine
 from models import NGO, Tag, NGOTag, Opportunity, Event, WishlistItem, WishlistOffer
 from nlu import parse_query
+from routes_events import bp_events
+
+
+
+
 
 app = Flask(__name__)
 CORS(app)
-
+app.register_blueprint(bp_events)
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "dev-admin-token")
 
 def require_admin():

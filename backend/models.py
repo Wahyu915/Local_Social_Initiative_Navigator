@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, Text, Boolean, ForeignKey, Date, TIMESTAMP, func
+from sqlalchemy import (
+    Integer, Boolean, Date, TIMESTAMP, Column, Text, Time, ForeignKey, func
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from db import Base
@@ -55,13 +57,14 @@ class Opportunity(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
     ngo = relationship("NGO", back_populates="opportunities")
 
+# -------- Audit / metrics events (existing) --------
+
 class Event(Base):
-    __tablename__ = "events"
+    __tablename__ = "events"  # audit log
     id = Column(Integer, primary_key=True)
     event_type = Column(Text, nullable=False)
-    payload = Column(JSONB, nullable=False)  # fixed
+    payload = Column(JSONB, nullable=False, server_default='{}')
     created_at = Column(TIMESTAMP, server_default=func.now())
-
 
 # -------- Wishlist models --------
 
@@ -95,3 +98,21 @@ class WishlistOffer(Base):
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
     wishlist_item = relationship("WishlistItem", back_populates="offers")
+
+# -------- Upcoming events (NEW, for GetInvolved/Home) --------
+
+class UpcomingEvent(Base):
+    __tablename__ = "upcoming_events"
+
+    id = Column(Integer, primary_key=True)
+    ngo_id = Column(Integer, ForeignKey("ngos.id", ondelete="SET NULL"))
+    event_name = Column(Text, nullable=False)
+    event_date = Column(Date, nullable=False)
+    event_time = Column(Time, nullable=False)
+    location = Column(Text, nullable=False)
+    organizer = Column(Text)
+    description = Column(Text)
+    created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    ngo = relationship("NGO", lazy="joined")
