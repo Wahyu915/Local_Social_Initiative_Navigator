@@ -1,0 +1,150 @@
+/* container + cards */
+.np-container { max-width: 1100px; margin: 0 auto; }
+.card { background: #fff; border: 1px solid #e6e6e6; border-radius: 12px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+
+/* cover banner */
+.np-cover { height: 140px; border-radius: 12px; background: linear-gradient(135deg,#1f4aa8 0%, #2d6cdf 50%, #58a7ff 100%); margin-bottom: -56px; }
+
+/* header */
+.np-header { display: flex; gap: 16px; align-items: flex-end; padding-top: 32px; }
+.np-avatar { width: 96px; height: 96px; border-radius: 50%; background: #2d6cdf; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 28px; border: 4px solid #fff; box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.np-heading { flex: 1; }
+.np-name { margin: 0; font-size: 28px; font-weight: 700; }
+.np-location { color: #555; margin-top: 6px; }
+
+/* tags */
+.np-tags { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.np-tag { padding: 6px 10px; font-size: 12px; border-radius: 999px; border: 1px solid #e6e6e6; background: #fafafa; }
+
+/* actions */
+.np-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-block; padding: 8px 12px; border-radius: 8px; border: 1px solid #e6e6e6; background: #fff; text-decoration: none; color: #111; font-weight: 500; }
+.btn.primary { background: #f6c445; border-color: #f6c445; }
+.btn.small { padding: 6px 10px; }
+.btn.muted { color: #666; cursor: default; }
+
+/* layout */
+.np-layout { display: grid; grid-template-columns: 1fr 280px; gap: 16px; margin-top: 16px; }
+@media (max-width: 1000px) { .np-layout { grid-template-columns: 1fr; } .np-side { order: -1; } }
+
+/* about */
+.np-about h2, .np-wishlist h2 { margin: 0 0 8px; font-size: 18px; }
+.np-text { color: #333; line-height: 1.6; }
+
+/* wishlist */
+.np-section-title { display: flex; align-items: center; gap: 8px; }
+.np-count { background: #f1f1f1; border-radius: 999px; padding: 2px 8px; font-size: 12px; color: #555; }
+.np-muted { color: #666; }
+
+.np-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+@media (max-width: 700px) { .np-grid { grid-template-columns: 1fr; } }
+
+.np-wish { border: 1px solid #eee; border-radius: 10px; padding: 14px; background: #fff; display: grid; gap: 6px; }
+.np-wish-title { font-weight: 600; }
+.np-wish-desc { color: #555; }
+.np-wish-meta { color: #666; font-size: 12px; }
+
+/* sidebar info */
+.np-info h3 { margin: 0 0 10px; }
+.np-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.np-key { width: 84px; display: inline-block; color: #666; }
+.np-badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #f1f1f1; }
+.np-badge.ok { background: #e7f6ec; color: #1a7f37; }
+.np-badge.no { background: #fde8e8; color: #b10000; }
+
+/* helpers */
+.np-error { color: #b10000; }
+.np-skeleton { padding: 20px; border-radius: 8px; background: linear-gradient(90deg,#f5f5f5 25%,#ededed 37%,#f5f5f5 63%); background-size: 400% 100%; animation: np-scan 1.2s infinite; }
+@keyframes np-scan { 0% {background-position: 100% 50%} 100% {background-position: 0% 50%} }
+
+
+/* contact list items */
+.np-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;               /* spacing between icon and text */
+  padding: 10px 0;         /* vertical spacing */
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.np-list li:last-child {
+  border-bottom: none;
+}
+
+/* icons */
+.np-icon {
+  font-size: 16px;
+  min-width: 20px;         /* keeps alignment tidy */
+  color: #555;
+}
+
+/* verified badges */
+.np-badge.ok {
+  background: #e7f6ec;
+  color: #1a7f37;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.np-badge.no {
+  background: #fde8e8;
+  color: #b10000;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+/* back button */
+.np-container {
+  position: relative;   /* ensures the button positions relative to the profile container */
+}
+
+.np-back {
+  position: absolute;
+  top: 20px;             /* aligns with top of the blue cover */
+  left: 20px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  z-index: 20;           /* stay above the cover */
+}
+
+.np-back:hover {
+  background: #f5f5f5;
+  transform: scale(1.05);
+}
+
+.np-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #2d6cdf;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 28px;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  overflow: hidden;             /* ensures image is clipped to circle */
+}
+
+.np-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;            /* crops to cover circle */
+  display: block;
+}
