@@ -1,4 +1,5 @@
-import React from "react";
+// src/pages/Home.jsx
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -14,12 +15,19 @@ import {
   FaPhone,
   FaMapMarkerAlt,
 } from "react-icons/fa";
+import { useUpdates } from "../context/UpdatesContext";
+import UpdateCard from "../components/UpdateCard";
 
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 export default function Home() {
-  /* ---------------- Hero Carousel ---------------- */
+  const { events, donations, volunteers, loadAll } = useUpdates();
+
+  useEffect(() => {
+    loadAll(); // ✅ fetch all updates on load
+  }, []);
+
   const heroSlides = [
     {
       title: "Caring for Brunei, Together",
@@ -55,80 +63,7 @@ export default function Home() {
     slidesToScroll: 1,
   };
 
-  /* ---------------- Features Icons ---------------- */
-  const features = [
-    { icon: <FaHandsHelping />, text: "Browse NGOs", link: "/discover" },
-    { icon: <FaDonate />, text: "Donate", link: "/getinvolved" },
-    { icon: <FaUsers />, text: "Volunteer", link: "/getinvolved" },
-    { icon: <FaCalendarAlt />, text: "Events", link: "/getinvolved" },
-    { icon: <FaPlusCircle />, text: "Submit NGO", link: "/submit" },
-  ];
-
-  /* ---------------- Featured NGOs ---------------- */
-  const ngos = [
-    {
-      id: 1,
-      name: "Brunei Animal Welfare",
-      category: "Animal Rights",
-      logo: "https://via.placeholder.com/100?text=Animal",
-    },
-    {
-      id: 2,
-      name: "Green Earth Brunei",
-      category: "Environment",
-      logo: "https://via.placeholder.com/100?text=Earth",
-    },
-    {
-      id: 3,
-      name: "Youth for Change",
-      category: "Youth Development",
-      logo: "https://via.placeholder.com/100?text=Youth",
-    },
-  ];
-
-  const ngoSettings = {
-    dots: true,
-    arrows: true,
-    infinite: true,
-    autoplay: true,
-    autoplaySpeed: 3500,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 2 } },
-      { breakpoint: 768, settings: { slidesToShow: 1 } },
-    ],
-  };
-
-  /* ---------------- Latest Events ---------------- */
-  const events = [
-    {
-      id: 1,
-      title: "Beach Cleanup Drive",
-      date: "Oct 5, 2025",
-      location: "Muara Beach",
-      img: "https://via.placeholder.com/640x400?text=Beach+Cleanup",
-      link: "/getinvolved",
-    },
-    {
-      id: 2,
-      title: "Fundraising Marathon",
-      date: "Oct 20, 2025",
-      location: "Bandar Seri Begawan",
-      img: "https://via.placeholder.com/640x400?text=Marathon",
-      link: "/getinvolved",
-    },
-    {
-      id: 3,
-      title: "Tree Planting Project",
-      date: "Nov 15, 2025",
-      location: "Temburong",
-      img: "https://via.placeholder.com/640x400?text=Tree+Planting",
-      link: "/getinvolved",
-    },
-  ];
-
-  const eventSettings = {
+  const updateSettings = {
     dots: true,
     arrows: true,
     infinite: true,
@@ -141,6 +76,13 @@ export default function Home() {
       { breakpoint: 768, settings: { slidesToShow: 1 } },
     ],
   };
+
+  // ✅ Merge updates
+  const latestUpdates = [
+    ...events.map((e) => ({ ...e, type: "event" })),
+    ...donations.map((d) => ({ ...d, type: "donation" })),
+    ...volunteers.map((v) => ({ ...v, type: "volunteer" })),
+  ].slice(0, 6);
 
   return (
     <div>
@@ -165,103 +107,71 @@ export default function Home() {
         ))}
       </Slider>
 
-      {/* About Us Preview */}
+      {/* About Us */}
       <section className="about-preview alt-bg">
         <h2>About Us</h2>
         <p>
           Prihatin Brunei is a platform connecting NGOs, volunteers, and donors
-          to create a stronger community. Together, we work towards sustainable
-          development and care for Brunei.
+          to create a stronger community.
         </p>
         <Link to="/about" className="btn">
           Learn More
         </Link>
       </section>
 
-      {/* Features Icons */}
+      {/* Features */}
       <section className="features-carousel">
         <h2>What You Can Do</h2>
         <div className="features-row">
-          {features.map((f, idx) => (
-            <Link to={f.link} key={idx} className="feature-card">
-              <div className="feature-icon">{f.icon}</div>
-              <p>{f.text}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured NGOs */}
-      <section className="featured-section alt-bg">
-        <h2>Featured NGOs</h2>
-        <Slider {...ngoSettings}>
-          {ngos.map((ngo) => (
-            <div key={ngo.id} className="ngo-card">
-              <img src={ngo.logo} alt={ngo.name} />
-              <h3>{ngo.name}</h3>
-              <p>{ngo.category}</p>
-              <Link to={`/ngo/${ngo.id}`} className="btn">
-                View Profile
-              </Link>
-            </div>
-          ))}
-        </Slider>
-        <div className="view-all-wrapper">
-          <Link to="/discover" className="btn secondary-btn">
-            View All NGOs
+          <Link to="/discover" className="feature-card">
+            <div className="feature-icon"><FaHandsHelping /></div>
+            <p>Browse NGOs</p>
+          </Link>
+          <Link to="/getinvolved" className="feature-card">
+            <div className="feature-icon"><FaDonate /></div>
+            <p>Donate</p>
+          </Link>
+          <Link to="/getinvolved" className="feature-card">
+            <div className="feature-icon"><FaUsers /></div>
+            <p>Volunteer</p>
+          </Link>
+          <Link to="/getinvolved" className="feature-card">
+            <div className="feature-icon"><FaCalendarAlt /></div>
+            <p>Events</p>
+          </Link>
+          <Link to="/submit" className="feature-card">
+            <div className="feature-icon"><FaPlusCircle /></div>
+            <p>Submit NGO</p>
           </Link>
         </div>
       </section>
 
-      {/* Latest Events */}
+      {/* Latest Updates */}
       <section className="featured-section fade-in alt-bg">
-        <h2>Latest Events</h2>
-        <Slider {...eventSettings}>
-          {events.map((event) => (
-            <div key={event.id} className="ngo-card event-card">
-              <img src={event.img} alt={event.title} />
-              <h3>{event.title}</h3>
-              <p>
-                <strong>{event.date}</strong> • {event.location}
-              </p>
-              <Link to={event.link} className="btn">
-                Learn More
-              </Link>
-            </div>
-          ))}
+        <h2>Latest Updates</h2>
+        <Slider {...updateSettings}>
+          {latestUpdates.length > 0 ? (
+            latestUpdates.map((item) => (
+              <UpdateCard key={`${item.type}-${item.id}`} item={item} />
+            ))
+          ) : (
+            <p>No updates yet.</p>
+          )}
         </Slider>
       </section>
 
-      {/* Get in Touch */}
+      {/* Contact */}
       <section className="get-in-touch alt-bg">
         <h2>Get in Touch</h2>
-        <p>
-          We’d love to hear from you. Here are ways you can reach us and stay
-          connected.
-        </p>
         <div className="contact-options">
-          <div className="contact-card">
-            <FaPhone />
-            <p>Call Us</p>
-          </div>
-          <div className="contact-card">
-            <FaEnvelope />
-            <p>Email Us</p>
-          </div>
-          <div className="contact-card">
-            <FaMapMarkerAlt />
-            <p>Visit Us</p>
-          </div>
-          <div className="contact-card">
-            <FaPlusCircle />
-            <p>Submit NGO</p>
-          </div>
+          <div className="contact-card"><FaPhone /><p>Call Us</p></div>
+          <div className="contact-card"><FaEnvelope /><p>Email Us</p></div>
+          <div className="contact-card"><FaMapMarkerAlt /><p>Visit Us</p></div>
+          <div className="contact-card"><FaPlusCircle /><p>Submit NGO</p></div>
         </div>
       </section>
 
       <Footer />
-
-      {/* Chatbot Tooltip */}
       <div className="chatbot-tooltip">
         <div className="tooltip">💬 Need help? Chat with us</div>
         <ChatBox />

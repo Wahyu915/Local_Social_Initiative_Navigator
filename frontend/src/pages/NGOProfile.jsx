@@ -1,246 +1,170 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import Section from "../components/Section";
-import { getNGO, getWishlistByNGO } from "../lib/api";
-import "./ngo-profile.css";
+import ChatBox from "../components/ChatBox";
+import { fetchNGOById } from "../lib/api";
 import {
+  FaCheckCircle,
+  FaMapMarkerAlt,
   FaGlobe,
   FaEnvelope,
   FaPhone,
-  FaMapMarkerAlt,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaArrowLeft,
+  FaListAlt,
+  FaHandsHelping,
+  FaCalendarAlt,
 } from "react-icons/fa";
-
-function initialsFrom(name = "") {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((s) => s[0].toUpperCase())
-    .join("");
-}
-
-function domainOf(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url?.replace(/^https?:\/\//, "") || "";
-  }
-}
 
 export default function NGOProfile() {
   const { id } = useParams();
   const [ngo, setNgo] = useState(null);
-  const [tags, setTags] = useState([]);
-  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState(null);
-  const navigate = useNavigate();
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    let cancel = false;
-    (async () => {
-      try {
-        setLoading(true);
-        const d = await getNGO(id);
-        if (cancel) return;
-        setNgo(d.ngo);
-        setTags(d.tags || []);
-        const w = await getWishlistByNGO(id, { limit: 24 });
-        if (cancel) return;
-        setItems(w.items || []);
-      } catch (e) {
-        if (!cancel) setErr("NGO not found");
-      } finally {
-        if (!cancel) setLoading(false);
-      }
-    })();
-    return () => {
-      cancel = true;
-    };
+    fetchNGOById(id)
+      .then((data) => {
+        // ✅ Handle both backend response shapes
+        const ngoData = data.ngo || data;
+        setNgo(ngoData);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch NGO:", err);
+        setError("Failed to load NGO details.");
+        setLoading(false);
+      });
   }, [id]);
 
-  const locationLine = useMemo(() => {
-    if (!ngo) return "";
-    const parts = [ngo.city, ngo.district].filter(Boolean);
-    return parts.join(", ");
-  }, [ngo]);
+  if (loading) return <p>Loading NGO details...</p>;
+  if (error) return <p>{error}</p>;
+  if (!ngo) return <p>NGO not found.</p>;
 
   return (
-    <>
+    <div>
       <Navbar />
 
-      <Section>
-        {loading && <div className="np-skeleton">Loading profile…</div>}
-        {err && <p className="np-error">{err}</p>}
+      <div className="ngo-profile">
+        {/* Header */}
+        <div className="ngo-header">
+          <img
+            src={ngo.logo_url || "/placeholder-logo.png"}
+            alt={ngo.name}
+            className="ngo-profile-logo"
+          />
+          <h1>
+            {ngo.name}
+            {ngo.verified && (
+              <FaCheckCircle className="verified-badge" title="Verified NGO" />
+            )}
+          </h1>
+          {ngo.short_desc && <p className="ngo-short-desc">{ngo.short_desc}</p>}
+        </div>
 
-        {ngo && (
-          <div className="np-container">
-            {/* Back button */}
-            <button
-              onClick={() => navigate("/discover")}
-              className="np-back"
-              aria-label="Back to Discover"
-            >
-              <FaArrowLeft />
-            </button>
+        {/* Full Description */}
+        {ngo.full_desc && (
+          <p className="ngo-full-desc">{ngo.full_desc}</p>
+        )}
 
-            {/* Cover + header */}
-            <div className="np-cover" />
-
-            <div className="np-header card">
-              <div className="np-avatar" aria-hidden="true">
-                {ngo.logo_url ? (
-                  <img src={ngo.logo_url} alt={`${ngo.name} logo`} />
-                ) : (
-                <span>{initialsFrom(ngo.name)}</span>
-                )}
-              </div>
-
-              <div className="np-heading">
-                <h1 className="np-name">{ngo.name}</h1>
-                {locationLine && <div className="np-location">{locationLine}</div>}
-
-                {tags.length > 0 && (
-                  <div className="np-tags">
-                    {tags.map((t) => (
-                      <span key={t.key || t.name} className="np-tag">
-                        {t.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="np-actions">
-                  {ngo.website && (
-                    <a
-                      className="btn primary"
-                      href={ngo.website}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Visit website &middot; {domainOf(ngo.website)}
-                    </a>
-                  )}
-                  {ngo.email && (
-                    <a className="btn" href={`mailto:${ngo.email}`}>
-                      Email
-                    </a>
-                  )}
-                  {ngo.phone && <span className="btn muted">{ngo.phone}</span>}
-                </div>
-              </div>
-            </div>
-
-            {/* Main content */}
-            <div className="np-layout">
-              <div className="np-main">
-                {/* About / Summary */}
-                {(ngo.short_desc || ngo.full_desc) && (
-                  <div className="card np-about">
-                    <h2>About</h2>
-                    {ngo.short_desc && (
-                      <p className="np-text">{ngo.short_desc}</p>
-                    )}
-                    {ngo.full_desc && (
-                      <p className="np-text">{ngo.full_desc}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Wishlist */}
-                <div className="card np-wishlist">
-                  <div className="np-section-title">
-                    <h2>Wishlist</h2>
-                    {items.length > 0 && (
-                      <span className="np-count">{items.length}</span>
-                    )}
-                  </div>
-
-                  {items.length === 0 ? (
-                    <p className="np-muted">No items yet.</p>
-                  ) : (
-                    <ul className="np-grid">
-                      {items.map((it) => (
-                        <li key={it.id} className="np-wish">
-                          <div className="np-wish-title">{it.title}</div>
-                          {it.description && (
-                            <div className="np-wish-desc">{it.description}</div>
-                          )}
-                          <div className="np-wish-meta">
-                            {it.quantity || 1} {it.unit || ""} · Priority:{" "}
-                            {it.priority} · Status: {it.status}
-                          </div>
-                          <Link
-                            to={`/wishlist/${it.id}`}
-                            className="btn small primary"
-                          >
-                            Offer to help
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-
-              {/* Sidebar */}
-              <aside className="np-side">
-                <div className="card np-info">
-                  <h3>Contact</h3>
-                  <ul className="np-list">
-                    {ngo.website && (
-                      <li>
-                        <FaGlobe className="np-icon" />
-                        <a href={ngo.website} target="_blank" rel="noreferrer">
-                          {domainOf(ngo.website)}
-                        </a>
-                      </li>
-                    )}
-                    {ngo.email && (
-                      <li>
-                        <FaEnvelope className="np-icon" />
-                        <a href={`mailto:${ngo.email}`}>{ngo.email}</a>
-                      </li>
-                    )}
-                    {ngo.phone && (
-                      <li>
-                        <FaPhone className="np-icon" />
-                        <span>{ngo.phone}</span>
-                      </li>
-                    )}
-                    {locationLine && (
-                      <li>
-                        <FaMapMarkerAlt className="np-icon" />
-                        <span>{locationLine}</span>
-                      </li>
-                    )}
-                    <li>
-                      {ngo.verified ? (
-                        <>
-                          <FaCheckCircle className="np-icon text-green-600" />
-                          <span className="np-badge ok">Yes</span>
-                        </>
-                      ) : (
-                        <>
-                          <FaTimesCircle className="np-icon text-red-600" />
-                          <span className="np-badge no">No</span>
-                        </>
-                      )}
-                    </li>
-                  </ul>
-                </div>
-              </aside>
-            </div>
+        {/* Tags */}
+        {ngo.tags && ngo.tags.length > 0 && (
+          <div className="ngo-tags">
+            {ngo.tags.map((tag, idx) => (
+              <span key={idx} className="tag-pill">
+                {/* If backend sends tag object with .name, else fallback */}
+                {tag.name || tag}
+              </span>
+            ))}
           </div>
         )}
-      </Section>
+
+        {/* Contact & Location */}
+        <div className="ngo-contacts">
+          {(ngo.city || ngo.district) && (
+            <p>
+              <FaMapMarkerAlt /> {ngo.city || ""}{" "}
+              {ngo.district ? `, ${ngo.district}` : ""}
+            </p>
+          )}
+          {ngo.email && (
+            <p>
+              <FaEnvelope /> {ngo.email}
+            </p>
+          )}
+          {ngo.phone && (
+            <p>
+              <FaPhone /> {ngo.phone}
+            </p>
+          )}
+          {ngo.website && (
+            <p>
+              <FaGlobe />{" "}
+              <a href={ngo.website} target="_blank" rel="noreferrer">
+                {ngo.website}
+              </a>
+            </p>
+          )}
+        </div>
+
+        {/* Wishlist */}
+        {ngo.wishlist_items && ngo.wishlist_items.length > 0 && (
+          <section className="ngo-section">
+            <h2>
+              <FaListAlt /> Wishlist
+            </h2>
+            <ul>
+              {ngo.wishlist_items.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.title}</strong>
+                  {item.description && ` – ${item.description}`}
+                  {" ("}
+                  {item.quantity} {item.unit || ""}, {item.status}
+                  {")"}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Opportunities */}
+        {ngo.opportunities && ngo.opportunities.length > 0 && (
+          <section className="ngo-section">
+            <h2>
+              <FaHandsHelping /> Volunteer Opportunities
+            </h2>
+            <ul>
+              {ngo.opportunities.map((opp) => (
+                <li key={opp.id}>
+                  <strong>{opp.title}</strong>
+                  {opp.commitment && ` – ${opp.commitment}`}
+                  <br />
+                  {opp.description}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Upcoming Events */}
+        {ngo.upcoming_events && ngo.upcoming_events.length > 0 && (
+          <section className="ngo-section">
+            <h2>
+              <FaCalendarAlt /> Upcoming Events
+            </h2>
+            <ul>
+              {ngo.upcoming_events.map((event) => (
+                <li key={event.id}>
+                  <strong>{event.event_name}</strong> – {event.location} <br />
+                  {event.event_date} at {event.event_time}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
 
       <Footer />
-    </>
+      <ChatBox />
+    </div>
   );
 }

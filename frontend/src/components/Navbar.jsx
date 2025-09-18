@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { FaBars, FaTimes } from "react-icons/fa";
+import LoginModal from "./LoginModal";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showLogin, setShowLogin] = useState(false); // 🔹 track login modal
 
   return (
     <nav className="navbar">
@@ -23,8 +25,21 @@ export default function Navbar() {
         <Link to="/discover" onClick={() => setMenuOpen(false)}>Discover</Link>
         <Link to="/getinvolved" onClick={() => setMenuOpen(false)}>Get Involved</Link>
         <Link to="/contact" onClick={() => setMenuOpen(false)}>Contact</Link>
-        <button className="btn login-btn">Login</button>
+        
+        {/* 🔹 Login button now opens modal */}
+        <button 
+          className="btn login-btn"
+          onClick={() => {
+            setMenuOpen(false);
+            setShowLogin(true);
+          }}
+        >
+          Login
+        </button>
       </div>
+
+      {/* 🔹 Render Login Modal */}
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </nav>
   );
 }

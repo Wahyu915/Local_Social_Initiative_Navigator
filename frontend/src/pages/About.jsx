@@ -52,7 +52,6 @@ export default function About() {
         <p>
           Together, we can create meaningful impact. Be part of the change.  
         </p>
-        <a href="/get-involved" className="btn">Get Involved</a>
       </section>
 
       <Footer />

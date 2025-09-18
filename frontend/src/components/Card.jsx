@@ -1,5 +1,5 @@
-import React from "react"
-import { Link } from "react-router-dom"
+import React from "react";
+import { Link } from "react-router-dom";
 import {
   FaLeaf,
   FaUsers,
@@ -8,10 +8,23 @@ import {
   FaPaintBrush,
   FaBalanceScale,
   FaHeart,
-} from "react-icons/fa"
+  FaCheckCircle,
+  FaMapMarkerAlt,
+  FaStar,
+} from "react-icons/fa";
 
-export default function Card({ title, category, link }) {
-  // Small icon mapping by category (unchanged)
+export default function Card({
+  id,
+  title,
+  description,
+  category,
+  city,
+  district,
+  verified,
+  logo_url,
+  tags = [],
+  isNew = false,
+}) {
   const categoryIcons = {
     "Animal Rights": <FaHeart />,
     "Arts & Creatives": <FaPaintBrush />,
@@ -28,33 +41,65 @@ export default function Card({ title, category, link }) {
     "Human Rights & Legal Aid": <FaBalanceScale />,
     "Culture & Heritage": <FaPaintBrush />,
     "Technology & Digital Literacy": <FaGraduationCap />,
-  }
+  };
 
   return (
-    <div className="ngo-card">
-      <h3>
-        {/* Title is clickable if link is provided; otherwise plain text */}
-        {link ? (
-          <Link to={link} className="ngo-title-link" title={title}>
-            {title}
-          </Link>
-        ) : (
-          title
+    <Link to={`/ngo/${id}`} className="ngo-card">
+      {/* Top-right New badge */}
+      {isNew && (
+        <div className="card-header">
+          <span className="new-badge">
+            <FaStar /> New
+          </span>
+        </div>
+      )}
+
+      {/* Logo */}
+      <img
+        src={logo_url || "/placeholder-logo.png"}
+        alt={title}
+        className="ngo-logo"
+      />
+
+      {/* NGO Title */}
+      <h3 className="ngo-title">
+        {title}
+        {verified && (
+          <FaCheckCircle className="verified-badge" title="Verified NGO" />
         )}
       </h3>
 
-      {category && (
-        <p className="ngo-category">
-          {(categoryIcons[category] ?? null)} <span>{category}</span>
-        </p>
-      )}
+      {/* Short Description */}
+      <p className="ngo-description">
+        {description || "No description available."}
+      </p>
 
-      {/* Use React Router for client-side navigation (keeps your 'btn' styling) */}
-      {link && (
-        <Link to={link} className="btn" aria-label={`View ${title} profile`}>
-          View Profile
-        </Link>
-      )}
-    </div>
-  )
+      {/* Tags */}
+      <div className="ngo-tags">
+        {tags && tags.length > 0 ? (
+          tags.map((tag, idx) => (
+            <span key={idx} className="tag-pill">
+              {categoryIcons[tag] || <FaUsers />} {tag}
+            </span>
+          ))
+        ) : (
+          <span className="tag-pill">Uncategorized</span>
+        )}
+      </div>
+
+      {/* Location */}
+      <p className="ngo-location">
+        {city || district ? (
+          <>
+            <FaMapMarkerAlt /> {city}
+            {district ? `, ${district}` : ""}
+          </>
+        ) : (
+          "Location unavailable"
+        )}
+      </p>
+    </Link>
+  );
 }
+
+

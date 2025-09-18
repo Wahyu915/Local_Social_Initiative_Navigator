@@ -1,10 +1,10 @@
-import React from "react"
+import React from "react";
 
-export default function Section({ title, children }) {
+export default function Section({ title, children, className = "" }) {
   return (
-    <section>
-      <h2>{title}</h2>
+    <section className={`section ${className}`}>
+      {title && <h2 className="section-title">{title}</h2>}
       {children}
     </section>
-  )
+  );
 }

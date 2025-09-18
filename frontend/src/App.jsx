@@ -5,7 +5,8 @@ import Discover from "./pages/Discover"
 import GetInvolved from "./pages/GetInvolved"
 import Contact from "./pages/Contact"
 import NGOProfile from "./pages/NGOProfile"
-import NGO from "./pages/NGO";
+import Dashboard from "./pages/Dashboard";
+import SupporterDashboard from "./pages/SupporterDashboard";
 
 function App() {
   return (
@@ -16,7 +17,8 @@ function App() {
       <Route path="/getinvolved" element={<GetInvolved />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/ngo/:id" element={<NGOProfile />} />
-      <Route path="/ngo/:id" element={<NGO />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/supporter" element={<SupporterDashboard />} />
     </Routes>
   )
 }
