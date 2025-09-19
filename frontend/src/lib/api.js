@@ -8,10 +8,19 @@ export async function fetchHealth() {
 }
 
 /* ---------- NGOs ---------- */
-export async function fetchNGOs() {
-  const res = await fetch(`${API_URL}/api/ngos`);
+export async function fetchNGOs({ q = "", city, district, verified, limit = 20, offset = 0 } = {}) {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (city) params.set("city", city);
+  if (district) params.set("district", district);
+  if (typeof verified !== "undefined") params.set("verified", String(verified));
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+
+  const res = await fetch(`${API_URL}/api/ngos?${params.toString()}`);
   if (!res.ok) throw new Error("Failed to fetch NGOs");
-  return res.json();
+  const data = await res.json();
+  return data.ngos || []; // server returns {ngos: [...]}
 }
 
 export async function fetchNGODetail(id) {
@@ -23,12 +32,12 @@ export async function fetchNGODetail(id) {
 export async function fetchNGOById(id) {
   const res = await fetch(`${API_URL}/api/ngos/${id}`);
   if (!res.ok) throw new Error("Failed to fetch NGO details");
-  return res.json();
+  return res.json(); // { ngo: {...}, tags: [...] }
 }
 
 /* ---------- Normalizers ---------- */
 function normalizeEvent(e) {
-  // /api/events (routes_upcoming_events) -> { id, event_name, date, time, location, description, ngo_id, ngo_name }
+  // routes_upcoming_events -> { id, event_name, date, time, location, description, ngo_id, ngo_name }
   return {
     id: e.id,
     type: "event",
@@ -46,7 +55,7 @@ function normalizeEvent(e) {
 }
 
 function normalizeDonation(d) {
-  // /api/donations -> WishlistItem shape
+  // wishlist_items shape
   return {
     id: d.id,
     type: "donation",
@@ -65,7 +74,7 @@ function normalizeDonation(d) {
 }
 
 function normalizeVolunteer(v) {
-  // /api/volunteers -> Opportunity shape
+  // opportunities shape
   const location = v.location || [v.city, v.district].filter(Boolean).join(", ");
   return {
     id: v.id,
@@ -85,14 +94,22 @@ function normalizeVolunteer(v) {
   };
 }
 
-/* ---------- Events ---------- */
-export async function fetchEvents({ limit = 50, upcoming = true } = {}) {
-  const url = `${API_URL}/api/events?limit=${limit}${upcoming ? "&upcoming=1" : ""}`;
-  const res = await fetch(url);
+/* ---------- Events (UpcomingEvent routes) ---------- */
+export async function fetchEvents({ limit = 50, upcoming = true, ngo_id } = {}) {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  if (upcoming) params.set("upcoming", "1");
+  if (ngo_id) params.set("ngo_id", String(ngo_id));
+
+  const res = await fetch(`${API_URL}/api/events?${params.toString()}`);
   if (!res.ok) throw new Error("Failed to fetch events");
   const data = await res.json();
   const items = Array.isArray(data) ? data : (data.items || []);
   return items.map(normalizeEvent);
+}
+
+export async function fetchEventsByNGO(ngoId, { limit = 50, upcoming = true } = {}) {
+  return fetchEvents({ ngo_id: ngoId, limit, upcoming });
 }
 
 export async function createEvent(eventData) {
@@ -102,8 +119,8 @@ export async function createEvent(eventData) {
     time: eventData.time,
     location: eventData.location,
     description: eventData.description,
-    ngo_id: eventData.ngo_id || 1,
-    organizer: eventData.organizer || "Demo NGO",
+    ngo_id: eventData.ngo_id || null,
+    organizer: eventData.organizer || null,
   };
   const res = await fetch(`${API_URL}/api/events`, {
     method: "POST",
@@ -145,18 +162,26 @@ export async function deleteEventApi(id) {
 }
 
 /* ---------- Donations (Wishlist) ---------- */
-export async function fetchDonations({ status = "open", limit = 50 } = {}) {
-  const url = `${API_URL}/api/donations?status=${encodeURIComponent(status)}&limit=${limit}`;
-  const res = await fetch(url);
+export async function fetchDonations({ status = "open", limit = 50, ngo_id } = {}) {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  params.set("limit", String(limit));
+  if (ngo_id) params.set("ngo_id", String(ngo_id));
+
+  const res = await fetch(`${API_URL}/api/donations?${params.toString()}`);
   if (!res.ok) throw new Error("Failed to fetch donations");
   const data = await res.json();
   return (data.items || []).map(normalizeDonation);
 }
 
+export async function fetchDonationsByNGO(ngoId, { status = "open", limit = 50 } = {}) {
+  return fetchDonations({ status, limit, ngo_id: ngoId });
+}
+
 export async function createDonation(d) {
   const payload = {
     title: d.title,
-    ngo_id: d.ngo_id || 1,
+    ngo_id: d.ngo_id || null,
     description: d.description,
     quantity: d.quantity || 1,
     unit: d.unit || null,
@@ -192,12 +217,20 @@ export async function deleteDonationApi(id) {
 }
 
 /* ---------- Volunteers (Opportunities) ---------- */
-export async function fetchVolunteers({ active = true, limit = 50 } = {}) {
-  const url = `${API_URL}/api/volunteers?limit=${limit}${active ? "&active=1" : ""}`;
-  const res = await fetch(url);
+export async function fetchVolunteers({ active = true, limit = 50, ngo_id } = {}) {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  if (active) params.set("active", "1");
+  if (ngo_id) params.set("ngo_id", String(ngo_id));
+
+  const res = await fetch(`${API_URL}/api/volunteers?${params.toString()}`);
   if (!res.ok) throw new Error("Failed to fetch volunteers");
   const data = await res.json();
   return (data.items || []).map(normalizeVolunteer);
+}
+
+export async function fetchVolunteersByNGO(ngoId, { active = true, limit = 50 } = {}) {
+  return fetchVolunteers({ active, limit, ngo_id: ngoId });
 }
 
 export async function createVolunteer(v) {
@@ -237,4 +270,5 @@ export async function deleteVolunteerApi(id) {
   if (!res.ok) throw new Error("Failed to delete volunteer");
   return { ok: true };
 }
+
 

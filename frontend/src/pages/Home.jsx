@@ -14,12 +14,19 @@ import {
   FaEnvelope,
   FaPhone,
   FaMapMarkerAlt,
+  FaPaperPlane,
 } from "react-icons/fa";
 import { useUpdates } from "../context/UpdatesContext";
 import UpdateCard from "../components/UpdateCard";
+import FeaturedCarousel from "../components/FeaturedCarousel";
 
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+
+/* Pictures */
+import hero1 from "../assets/hero1.png";
+import hero2 from "../assets/hero2.png";
+import hero3 from "../assets/hero3.png";
 
 export default function Home() {
   const { events, donations, volunteers, loadAll } = useUpdates();
@@ -34,21 +41,21 @@ export default function Home() {
       desc: "Join us in making a difference through NGOs, events, and volunteering.",
       btnText: "Get Involved",
       btnLink: "/getinvolved",
-      img: "src/assets/hero1.png",
+      img: hero1,
     },
     {
       title: "Support NGOs Across Brunei",
       desc: "Discover organizations empowering communities in all sectors.",
       btnText: "Discover NGOs",
       btnLink: "/discover",
-      img: "src/assets/hero2.png",
+      img: hero2,
     },
     {
       title: "Your Time, Your Impact",
       desc: "Volunteer your skills and contribute to causes that matter.",
       btnText: "Volunteer Now",
       btnLink: "/getinvolved",
-      img: "src/assets/hero3.png",
+      img: hero3,
     },
   ];
 
@@ -91,11 +98,8 @@ export default function Home() {
       {/* Hero Section */}
       <Slider {...heroSettings} className="hero-carousel">
         {heroSlides.map((slide, idx) => (
-          <div
-            key={idx}
-            className="hero-slide"
-            style={{ backgroundImage: `url(${slide.img})` }}
-          >
+          <div key={idx} className="hero-slide">
+            <img src={slide.img} alt={slide.title} className="hero-img" />
             <div className="hero-overlay fade-in">
               <h1>{slide.title}</h1>
               <p>{slide.desc}</p>
@@ -119,10 +123,13 @@ export default function Home() {
         </Link>
       </section>
 
-      {/* Features */}
-      <section className="features-carousel">
+      {/* ✅ Featured NGOs Carousel */}
+      <FeaturedCarousel title="Featured NGOs" limit={8} />
+
+      {/* ✅ What You Can Do */}
+      <section className="what-you-can-do">
         <h2>What You Can Do</h2>
-        <div className="features-row">
+        <div className="features-grid">
           <Link to="/discover" className="feature-card">
             <div className="feature-icon"><FaHandsHelping /></div>
             <p>Browse NGOs</p>
@@ -158,16 +165,39 @@ export default function Home() {
             <p>No updates yet.</p>
           )}
         </Slider>
+
+        {/* View All Updates Button */}
+        <div className="view-all-wrapper">
+          <Link to="/getinvolved" className="view-all-btn">
+            View All
+          </Link>
+        </div>
       </section>
 
-      {/* Contact */}
+      {/* ✅ Get in Touch */}
       <section className="get-in-touch alt-bg">
         <h2>Get in Touch</h2>
         <div className="contact-options">
-          <div className="contact-card"><FaPhone /><p>Call Us</p></div>
-          <div className="contact-card"><FaEnvelope /><p>Email Us</p></div>
-          <div className="contact-card"><FaMapMarkerAlt /><p>Visit Us</p></div>
-          <div className="contact-card"><FaPlusCircle /><p>Submit NGO</p></div>
+          <Link to="/contact" className="contact-card">
+            <FaPhone />
+            <p>Call Us</p>
+          </Link>
+          <Link to="/contact" className="contact-card">
+            <FaEnvelope />
+            <p>Email Us</p>
+          </Link>
+          <Link to="/contact" className="contact-card">
+            <FaMapMarkerAlt />
+            <p>Visit Us</p>
+          </Link>
+          <Link to="/contact" className="contact-card">
+            <FaPaperPlane />
+            <p>Send a Message</p>
+          </Link>
+          <Link to="/submit" className="contact-card">
+            <FaPlusCircle />
+            <p>Submit NGO</p>
+          </Link>
         </div>
       </section>
 
@@ -179,5 +209,3 @@ export default function Home() {
     </div>
   );
 }
-
-

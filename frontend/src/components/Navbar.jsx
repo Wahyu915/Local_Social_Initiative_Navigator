@@ -1,17 +1,33 @@
+// src/components/Navbar.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { FaBars, FaTimes } from "react-icons/fa";
 import LoginModal from "./LoginModal";
+import logo from "../assets/Home.png"; // ✅ replace with your 2nd image file
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showLogin, setShowLogin] = useState(false); // 🔹 track login modal
+  const [showLogin, setShowLogin] = useState(false);
 
   return (
     <nav className="navbar">
-      {/* Logo */}
+      {/* Logo with text */}
       <div className="logo">
-        <Link to="/">Prihatin Brunei</Link>
+        <Link 
+          to="/" 
+          onClick={() => setMenuOpen(false)} 
+          style={{ display: "flex", alignItems: "center", textDecoration: "none" }}
+        >
+          <img 
+            src={logo} 
+            alt="Prihatin Brunei Logo" 
+              className="navbar-logo"
+              style={{ height: "40px", marginRight: "10px", verticalAlign: "middle" }}
+          />
+          <span style={{ fontWeight: "700", fontSize: "18px", verticalAlign: "middle" }}>
+            Prihatin Brunei
+          </span>
+        </Link>
       </div>
 
       {/* Hamburger Icon (mobile only) */}
@@ -26,7 +42,7 @@ export default function Navbar() {
         <Link to="/getinvolved" onClick={() => setMenuOpen(false)}>Get Involved</Link>
         <Link to="/contact" onClick={() => setMenuOpen(false)}>Contact</Link>
         
-        {/* 🔹 Login button now opens modal */}
+        {/* Login button opens modal */}
         <button 
           className="btn login-btn"
           onClick={() => {
@@ -38,9 +54,8 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* 🔹 Render Login Modal */}
+      {/* Login Modal */}
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </nav>
   );
 }
-

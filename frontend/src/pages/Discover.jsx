@@ -1,3 +1,4 @@
+// src/pages/Discover.jsx
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -7,12 +8,7 @@ import Card from "../components/Card";
 import { fetchNGOs } from "../lib/api";
 import InfiniteScroll from "react-infinite-scroll-component";
 
-// Map
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-
 export default function Discover() {
-  const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDistrict, setSelectedDistrict] = useState("all");
@@ -40,7 +36,7 @@ export default function Discover() {
     setLoading(true);
     fetchNGOs()
       .then((data) => {
-        const normalized = (data.ngos || []).map((ngo) => {
+        const normalized = data.map((ngo) => {
           let tags = ngo.tags || [];
           if (ngo.category && !tags.includes(ngo.category)) {
             tags = [...tags, ngo.category];
@@ -109,16 +105,6 @@ export default function Discover() {
     setSelectedDistrict("all");
   };
 
-  // ✅ Marker icon factory (category-colored)
-  const getMarkerIcon = (category) => {
-    const color = categoryColors[category] || categoryColors.default;
-    return L.divIcon({
-      className: "custom-marker",
-      html: `<div style="background:${color}; width:16px; height:16px; border-radius:50%; border:2px solid white;"></div>`,
-      iconSize: [16, 16],
-    });
-  };
-
   return (
     <div>
       <Navbar />
@@ -131,166 +117,103 @@ export default function Discover() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === "all" ? "active" : ""}`}
-          onClick={() => setActiveTab("all")}
-        >
-          Browse All
-        </button>
-        <button
-          className={`tab ${activeTab === "map" ? "active" : ""}`}
-          onClick={() => setActiveTab("map")}
-        >
-          Map View
-        </button>
-      </div>
-
       {/* Main Section */}
       <Section className="discover-section">
-        {activeTab === "all" && (
-          <>
-            {/* Filters Row */}
-            <div className="filters-row">
-              <div className="search-bar">
-                <input
-                  type="text"
-                  placeholder="🔍 Search NGOs by name, city, or tags..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-
-              <div className="district-filter">
-                <select
-                  id="district"
-                  value={selectedDistrict}
-                  onChange={(e) => setSelectedDistrict(e.target.value)}
-                >
-                  {districts.map((dist) => (
-                    <option key={dist} value={dist}>
-                      {dist === "all" ? "All Districts" : dist}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button className="reset-btn" onClick={resetFilters}>
-                Reset Filters
-              </button>
-            </div>
-
-            {/* Categories Row */}
-            <div className="category-tags">
-              {categories.map((cat) => {
-                const color = categoryColors[cat] || categoryColors.default;
-                return (
-                  <button
-                    key={cat}
-                    className={`tag ${selectedCategory === cat ? "active" : ""}`}
-                    onClick={() => setSelectedCategory(cat)}
-                    style={{
-                      borderColor: color,
-                      color: selectedCategory === cat ? "#fff" : color,
-                      background:
-                        selectedCategory === cat ? color : "#fff",
-                    }}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* NGO Count */}
-            <p className="ngo-count">
-              Showing {visibleNGOs.length} of {filteredNGOs.length} NGOs
-            </p>
-
-            {/* NGO Grid */}
-            {loading ? (
-              <p>Loading NGOs...</p>
-            ) : error ? (
-              <p className="error-msg">{error}</p>
-            ) : filteredNGOs.length > 0 ? (
-              <InfiniteScroll
-                dataLength={visibleNGOs.length}
-                next={() => setVisibleCount(visibleCount + 6)}
-                hasMore={visibleCount < filteredNGOs.length}
-                loader={<p className="loading-msg">Loading more NGOs...</p>}
-                endMessage={
-                  <p className="end-results">
-                    🎉 You’ve reached the end of the results.
-                  </p>
-                }
-              >
-                <div className="card-grid">
-                  {visibleNGOs.map((ngo) => (
-                    <Card
-                      key={ngo.id}
-                      id={ngo.id}
-                      title={ngo.name}
-                      description={ngo.short_desc}
-                      category={ngo.category}
-                      city={ngo.city}
-                      district={ngo.district}
-                      verified={ngo.verified}
-                      logo_url={ngo.logo_url}
-                      tags={ngo.tags}
-                      isNew={isNewNGO(ngo.created_at)}
-                    />
-                  ))}
-                </div>
-              </InfiniteScroll>
-            ) : (
-              <p className="empty-state">
-                🤔 No NGOs match your filters. Try adjusting your search or
-                filters.
-              </p>
-            )}
-          </>
-        )}
-
-        {/* Map View */}
-        {activeTab === "map" && (
-          <div className="map-view">
-            <MapContainer
-              center={[4.5353, 114.7277]}
-              zoom={11}
-              scrollWheelZoom={true} // ✅ Enable scroll zoom
-              className="leaflet-container"
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {ngos
-                .filter((ngo) => ngo.latitude && ngo.longitude)
-                .map((ngo) => {
-                  const lat = parseFloat(ngo.latitude);
-                  const lng = parseFloat(ngo.longitude);
-                  if (isNaN(lat) || isNaN(lng)) return null;
-                  return (
-                    <Marker
-                      key={ngo.id}
-                      position={[lat, lng]}
-                      icon={getMarkerIcon(ngo.category)}
-                    >
-                      <Popup>
-                        <strong>{ngo.name}</strong>
-                        <br />
-                        {ngo.short_desc || "No description available"}
-                        <br />
-                        {ngo.city || "No city info"}
-                        <br />
-                        <a href={`/ngo/${ngo.id}`}>View Profile</a>
-                      </Popup>
-                    </Marker>
-                  );
-                })}
-            </MapContainer>
+        {/* Filters Row */}
+        <div className="filters-row">
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="🔍 Search NGOs by name, city, or tags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
+
+          <div className="district-filter">
+            <select
+              id="district"
+              value={selectedDistrict}
+              onChange={(e) => setSelectedDistrict(e.target.value)}
+            >
+              {districts.map((dist) => (
+                <option key={dist} value={dist}>
+                  {dist === "all" ? "All Districts" : dist}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button className="reset-btn" onClick={resetFilters}>
+            Reset Filters
+          </button>
+        </div>
+
+        {/* Categories Row */}
+        <div className="category-tags">
+          {categories.map((cat) => {
+            const color = categoryColors[cat] || categoryColors.default;
+            return (
+              <button
+                key={cat}
+                className={`tag ${selectedCategory === cat ? "active" : ""}`}
+                onClick={() => setSelectedCategory(cat)}
+                style={{
+                  borderColor: color,
+                  color: selectedCategory === cat ? "#fff" : color,
+                  background: selectedCategory === cat ? color : "#fff",
+                }}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* NGO Count */}
+        <p className="ngo-count">
+          Showing {visibleNGOs.length} of {filteredNGOs.length} NGOs
+        </p>
+
+        {/* NGO Grid */}
+        {loading ? (
+          <p>Loading NGOs...</p>
+        ) : error ? (
+          <p className="error-msg">{error}</p>
+        ) : filteredNGOs.length > 0 ? (
+          <InfiniteScroll
+            dataLength={visibleNGOs.length}
+            next={() => setVisibleCount(visibleCount + 6)}
+            hasMore={visibleCount < filteredNGOs.length}
+            loader={<p className="loading-msg">Loading more NGOs...</p>}
+            endMessage={
+              <p className="end-results">
+                🎉 You’ve reached the end of the results.
+              </p>
+            }
+          >
+            <div className="card-grid">
+              {visibleNGOs.map((ngo) => (
+                <Card
+                  key={ngo.id}
+                  id={ngo.id}
+                  title={ngo.name}
+                  description={ngo.short_desc}
+                  category={ngo.category}
+                  city={ngo.city}
+                  district={ngo.district}
+                  verified={ngo.verified}
+                  logo_url={ngo.logo_url}
+                  tags={ngo.tags}
+                  isNew={isNewNGO(ngo.created_at)}
+                />
+              ))}
+            </div>
+          </InfiniteScroll>
+        ) : (
+          <p className="empty-state">
+            🤔 No NGOs match your filters. Try adjusting your search or filters.
+          </p>
         )}
       </Section>
 
@@ -299,6 +222,7 @@ export default function Discover() {
     </div>
   );
 }
+
 
 
 

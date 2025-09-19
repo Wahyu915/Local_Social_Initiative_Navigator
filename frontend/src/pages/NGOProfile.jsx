@@ -1,9 +1,19 @@
-import React, { useEffect, useState } from "react";
+// src/pages/NGOProfile.jsx
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ChatBox from "../components/ChatBox";
-import { fetchNGOById } from "../lib/api";
+import DonationDetailsModal from "../components/DonationDetailsModal";
+import WishlistItemCard from "../components/WishlistItemCard";
+
+import {
+  fetchNGOById,
+  fetchDonationsByNGO,
+  fetchEventsByNGO,
+  fetchVolunteersByNGO,
+} from "../lib/api";
+
 import {
   FaCheckCircle,
   FaMapMarkerAlt,
@@ -13,30 +23,140 @@ import {
   FaListAlt,
   FaHandsHelping,
   FaCalendarAlt,
+  FaUsers,
+  FaLeaf,
+  FaGraduationCap,
+  FaPaintBrush,
+  FaBalanceScale,
+  FaHeart,
 } from "react-icons/fa";
 
 export default function NGOProfile() {
   const { id } = useParams();
   const [ngo, setNgo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [wishlist, setWishlist] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [volunteers, setVolunteers] = useState([]);
 
+  const [loading, setLoading] = useState(true);
+  const [wLoading, setWLoading] = useState(true);
+  const [eLoading, setELoading] = useState(true);
+  const [vLoading, setVLoading] = useState(true);
+
+  const [error, setError] = useState(null);
+  const [activeDonation, setActiveDonation] = useState(null);
+
+  const locationStr = useMemo(
+    () => [ngo?.city, ngo?.district].filter(Boolean).join(", "),
+    [ngo]
+  );
+
+  // ✅ Category → icon mapping
+  const categoryIcons = {
+    "Animal Rights": <FaHeart />,
+    "Arts & Creatives": <FaPaintBrush />,
+    "Community": <FaUsers />,
+    "Disaster Relief": <FaHandsHelping />,
+    "Education": <FaGraduationCap />,
+    "Green Initiative": <FaLeaf />,
+    "Social Entrepreneurship": <FaBalanceScale />,
+    "Spiritual & Religion": <FaHandsHelping />,
+    "Youth Development": <FaUsers />,
+    "Health": <FaHeart />,
+    "Elderly Care": <FaUsers />,
+    "Disability Services": <FaHandsHelping />,
+    "Human Rights & Legal Aid": <FaBalanceScale />,
+    "Culture & Heritage": <FaPaintBrush />,
+    "Technology & Digital Literacy": <FaGraduationCap />,
+  };
+
+  // ✅ Load NGO
   useEffect(() => {
-    fetchNGOById(id)
-      .then((data) => {
-        // ✅ Handle both backend response shapes
+    let cancelled = false;
+    async function loadNGO() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchNGOById(id);
         const ngoData = data.ngo || data;
-        setNgo(ngoData);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch NGO:", err);
-        setError("Failed to load NGO details.");
-        setLoading(false);
-      });
+        if (!cancelled) setNgo(ngoData);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setError("⚠️ Failed to load NGO details.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadNGO();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
-  if (loading) return <p>Loading NGO details...</p>;
+  // ✅ Load Wishlist
+  useEffect(() => {
+    let cancelled = false;
+    async function loadWishlist() {
+      setWLoading(true);
+      try {
+        const items = await fetchDonationsByNGO(id, { status: "open" });
+        if (!cancelled) setWishlist(items);
+      } catch (e) {
+        console.error("Failed to load wishlist", e);
+        if (!cancelled) setWishlist([]);
+      } finally {
+        if (!cancelled) setWLoading(false);
+      }
+    }
+    if (id) loadWishlist();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // ✅ Load Events
+  useEffect(() => {
+    let cancelled = false;
+    async function loadEvents() {
+      setELoading(true);
+      try {
+        const items = await fetchEventsByNGO(id, { upcoming: true });
+        if (!cancelled) setEvents(items);
+      } catch (e) {
+        console.error("Failed to load events", e);
+        if (!cancelled) setEvents([]);
+      } finally {
+        if (!cancelled) setELoading(false);
+      }
+    }
+    if (id) loadEvents();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // ✅ Load Volunteers
+  useEffect(() => {
+    let cancelled = false;
+    async function loadVolunteers() {
+      setVLoading(true);
+      try {
+        const items = await fetchVolunteersByNGO(id, { active: true });
+        if (!cancelled) setVolunteers(items);
+      } catch (e) {
+        console.error("Failed to load volunteers", e);
+        if (!cancelled) setVolunteers([]);
+      } finally {
+        if (!cancelled) setVLoading(false);
+      }
+    }
+    if (id) loadVolunteers();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (loading) return <p>⏳ Loading NGO details…</p>;
   if (error) return <p>{error}</p>;
   if (!ngo) return <p>NGO not found.</p>;
 
@@ -52,48 +172,52 @@ export default function NGOProfile() {
             alt={ngo.name}
             className="ngo-profile-logo"
           />
-          <h1>
-            {ngo.name}
+          <h1 className="ngo-name">
+            {ngo.name}{" "}
             {ngo.verified && (
               <FaCheckCircle className="verified-badge" title="Verified NGO" />
             )}
           </h1>
-          {ngo.short_desc && <p className="ngo-short-desc">{ngo.short_desc}</p>}
+          {ngo.short_desc && (
+            <p className="ngo-short-desc">{ngo.short_desc}</p>
+          )}
         </div>
 
-        {/* Full Description */}
+        {/* ✅ Full Description as its own section */}
         {ngo.full_desc && (
-          <p className="ngo-full-desc">{ngo.full_desc}</p>
+          <section className="ngo-section">
+            <h2>About this NGO</h2>
+            <p className="ngo-full-desc">{ngo.full_desc}</p>
+          </section>
         )}
 
-        {/* Tags */}
-        {ngo.tags && ngo.tags.length > 0 && (
+        {/* ✅ Tags with icons */}
+        {Array.isArray(ngo.tags) && ngo.tags.length > 0 && (
           <div className="ngo-tags">
             {ngo.tags.map((tag, idx) => (
               <span key={idx} className="tag-pill">
-                {/* If backend sends tag object with .name, else fallback */}
-                {tag.name || tag}
+                {categoryIcons[tag] || <FaUsers />} {tag?.name || tag}
               </span>
             ))}
           </div>
         )}
 
-        {/* Contact & Location */}
+        {/* Contact Info */}
         <div className="ngo-contacts">
-          {(ngo.city || ngo.district) && (
+          {locationStr && (
             <p>
-              <FaMapMarkerAlt /> {ngo.city || ""}{" "}
-              {ngo.district ? `, ${ngo.district}` : ""}
+              <FaMapMarkerAlt /> {locationStr}
             </p>
           )}
           {ngo.email && (
             <p>
-              <FaEnvelope /> {ngo.email}
+              <FaEnvelope />{" "}
+              <a href={`mailto:${ngo.email}`}>{ngo.email}</a>
             </p>
           )}
           {ngo.phone && (
             <p>
-              <FaPhone /> {ngo.phone}
+              <FaPhone /> <a href={`tel:${ngo.phone}`}>{ngo.phone}</a>
             </p>
           )}
           {ngo.website && (
@@ -107,64 +231,87 @@ export default function NGOProfile() {
         </div>
 
         {/* Wishlist */}
-        {ngo.wishlist_items && ngo.wishlist_items.length > 0 && (
-          <section className="ngo-section">
-            <h2>
-              <FaListAlt /> Wishlist
-            </h2>
-            <ul>
-              {ngo.wishlist_items.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.title}</strong>
-                  {item.description && ` – ${item.description}`}
-                  {" ("}
-                  {item.quantity} {item.unit || ""}, {item.status}
-                  {")"}
-                </li>
+        <section className="ngo-section">
+          <h2>
+            <FaListAlt /> Wishlist
+          </h2>
+          {wLoading ? (
+            <p>⏳ Loading wishlist…</p>
+          ) : wishlist.length === 0 ? (
+            <p>📭 This NGO has no open wishlist items.</p>
+          ) : (
+            <div className="wishlist-grid">
+              {wishlist.map((item) => (
+                <WishlistItemCard
+                  key={item.id}
+                  item={item}
+                  onDonate={(it) => setActiveDonation(it)}
+                />
               ))}
-            </ul>
-          </section>
-        )}
+            </div>
+          )}
+        </section>
 
-        {/* Opportunities */}
-        {ngo.opportunities && ngo.opportunities.length > 0 && (
-          <section className="ngo-section">
-            <h2>
-              <FaHandsHelping /> Volunteer Opportunities
-            </h2>
-            <ul>
-              {ngo.opportunities.map((opp) => (
-                <li key={opp.id}>
+        {/* Volunteer Opportunities */}
+        <section className="ngo-section">
+          <h2>
+            <FaHandsHelping /> Volunteer Opportunities
+          </h2>
+          {vLoading ? (
+            <p>⏳ Loading opportunities…</p>
+          ) : volunteers.length === 0 ? (
+            <p>🙅 No open volunteer opportunities.</p>
+          ) : (
+            <div className="simple-grid">
+              {volunteers.map((opp) => (
+                <div key={opp.id} className="simple-card">
                   <strong>{opp.title}</strong>
-                  {opp.commitment && ` – ${opp.commitment}`}
-                  <br />
-                  {opp.description}
-                </li>
+                  {opp.commitment && <p>{opp.commitment}</p>}
+                  <p>{opp.description}</p>
+                </div>
               ))}
-            </ul>
-          </section>
-        )}
+            </div>
+          )}
+        </section>
 
         {/* Upcoming Events */}
-        {ngo.upcoming_events && ngo.upcoming_events.length > 0 && (
-          <section className="ngo-section">
-            <h2>
-              <FaCalendarAlt /> Upcoming Events
-            </h2>
-            <ul>
-              {ngo.upcoming_events.map((event) => (
-                <li key={event.id}>
-                  <strong>{event.event_name}</strong> – {event.location} <br />
-                  {event.event_date} at {event.event_time}
-                </li>
+        <section className="ngo-section">
+          <h2>
+            <FaCalendarAlt /> Upcoming Events
+          </h2>
+          {eLoading ? (
+            <p>⏳ Loading events…</p>
+          ) : events.length === 0 ? (
+            <p>🙅 No upcoming events.</p>
+          ) : (
+            <div className="simple-grid">
+              {events.map((event) => (
+                <div key={event.id} className="simple-card">
+                  <strong>{event.title}</strong>
+                  <p>
+                    {event.date} {event.time && `at ${event.time}`}
+                  </p>
+                  <p>{event.location}</p>
+                </div>
               ))}
-            </ul>
-          </section>
-        )}
+            </div>
+          )}
+        </section>
       </div>
+
+      {/* Donation modal */}
+      {activeDonation && (
+        <DonationDetailsModal
+          donation={activeDonation}
+          onClose={() => setActiveDonation(null)}
+        />
+      )}
 
       <Footer />
       <ChatBox />
     </div>
   );
 }
+
+
+
